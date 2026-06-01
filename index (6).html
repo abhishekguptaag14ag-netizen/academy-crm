@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academy CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --green: #00e676;
+    --red: #ff5252;
+    --yellow: #ffd740;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
+
+  /* ========== LOGIN SCREEN ========== */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 60% 40%, rgba(108,99,255,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(0,230,118,0.06) 0%, transparent 50%),
+                var(--bg);
+  }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 400px;
+    max-width: 95vw;
+    text-align: center;
+  }
+  .login-logo {
+    font-family: var(--font-head);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .login-logo span { color: var(--accent); }
+  .login-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  .login-form label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
+  .login-form input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: var(--font-body);
+    transition: border-color 0.2s;
+  }
+  .login-form input:focus { outline: none; border-color: var(--accent); }
+  .login-error { color: var(--red); font-size: 13px; text-align: center; display: none; }
+  .btn-login {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.2s;
+  }
+  .btn-login:hover { background: #7c74ff; transform: translateY(-1px); }
+  .login-hint { font-size: 11px; color: var(--muted); margin-top: 16px; }
+
+  /* ========== MAIN APP (hidden until login) ========== */
+  #app { display: none; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--font-head); font-size: 18px; font-weight: 800; }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .user-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .user-badge strong { color: var(--text); }
+  .sync-status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* SETTINGS NOTICE */
+  .setup-notice {
+    background: rgba(255,215,64,0.08);
+    border-bottom: 1px solid rgba(255,215,64,0.2);
+    padding: 10px 24px;
+    font-size: 13px;
+    color: var(--yellow);
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+  .setup-notice a { color: var(--yellow); cursor: pointer; text-decoration: underline; }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-card { background: var(--surface); padding: 18px 22px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-family: var(--font-head); font-size: 26px; font-weight: 800; margin-top: 4px; }
+  .c-purple { color: var(--accent); }
+  .c-green { color: var(--green); }
+  .c-red { color: var(--red); }
+  .c-yellow { color: var(--yellow); }
+
+  /* MAIN LAYOUT */
+  .main { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 140px); }
+
+  /* LEFT PANEL */
+  .left-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+  }
+  .panel-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; color: var(--muted); }
+  .form-group input, .form-group select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 13px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font-body);
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+
+  .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; padding: 12px; font-size: 15px; font-weight: 600; }
+  .btn-primary:hover { background: #7c74ff; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(255,82,82,0.12); color: var(--red); border: 1px solid rgba(255,82,82,0.25); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+  .btn-full { width: 100%; }
+
+  .divider { height: 1px; background: var(--border); }
+
+  /* IMPORT */
+  .import-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .import-zone:hover { border-color: var(--accent); background: rgba(108,99,255,0.05); }
+  .import-zone p { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #csvFileInput { display: none; }
+
+  /* CAPI LOG */
+  .capi-log {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    max-height: 100px;
+    overflow-y: auto;
+    font-family: monospace;
+    line-height: 1.9;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel { padding: 22px; overflow-y: auto; }
+  .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+  .table-title { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+  .search-filter { display: flex; gap: 8px; }
+  .search-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-body);
+    width: 190px;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  .filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  /* TABLE */
+  .leads-table { width: 100%; border-collapse: collapse; }
+  .leads-table th {
+    text-align: left;
+    padding: 10px 13px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .leads-table td {
+    padding: 11px 13px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(42,42,61,0.5);
+    vertical-align: middle;
+  }
+  .leads-table tr:hover td { background: rgba(108,99,255,0.04); }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-new { background: rgba(107,107,138,0.2); color: var(--muted); }
+  .badge-qualified { background: rgba(0,230,118,0.12); color: var(--green); }
+  .badge-converted { background: rgba(108,99,255,0.18); color: var(--accent); }
+  .badge-notqualified { background: rgba(255,82,82,0.12); color: var(--red); }
+
+  .capi-sent { font-size: 11px; color: var(--green); }
+  .capi-pending { font-size: 11px; color: var(--muted); }
+  .capi-error { font-size: 11px; color: var(--red); }
+
+  .status-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: var(--font-body);
+    cursor: pointer;
+  }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state h3 { font-family: var(--font-head); color: var(--text); margin-bottom: 8px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 13px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    max-width: 300px;
+  }
+  .toast.show { display: flex; animation: slideIn 0.3s ease; }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid var(--accent); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* SETTINGS MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; }
+  .modal h2 { font-family: var(--font-head); font-size: 17px; margin-bottom: 18px; }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 13px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font-body);
+    margin-bottom: 12px;
+  }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
+  .modal-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .modal-hint { font-size: 12px; color: var(--muted); padding: 10px; background: var(--surface2); border-radius: 8px; line-height: 1.7; margin-bottom: 12px; }
+  .modal-hint a { color: var(--accent); }
+
+  /* LOADING SPINNER */
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .left-panel { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Academy<span>CRM</span></div>
+    <p class="login-sub">Apni team ke saath leads manage karo</p>
+    <div class="login-form">
+      <div>
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="abhishek" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div>
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <p class="login-error" id="loginError">❌ Galat username ya password</p>
+      <button class="btn-login" onclick="doLogin()">Login →</button>
+    </div>
+    <p class="login-hint">Default: admin / academy123</p>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">Academy<span>CRM</span></div>
+    <div class="header-right">
+      <div class="sync-status">
+        <span class="sync-dot" id="syncDot" style="background:var(--muted)"></span>
+        <span id="syncText">Not connected</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="openSettings()">⚙ Setup</button>
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()">↓ Export</button>
+      <div class="user-badge">👤 <strong id="currentUserLabel"></strong></div>
+      <button class="btn btn-sm" style="background:rgba(255,82,82,0.12);color:var(--red);border:1px solid rgba(255,82,82,0.25);" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- SETUP NOTICE -->
+  <div class="setup-notice" id="setupNotice">
+    ⚠️ Google Sheets abhi connect nahi hai — data sirf is browser mein save ho raha hai. <a onclick="openSettings()">Setup karo →</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value c-purple" id="statTotal">0</div></div>
+    <div class="stat-card"><div class="stat-label">Qualified</div><div class="stat-value c-green" id="statQualified">0</div></div>
+    <div class="stat-card"><div class="stat-label">Converted</div><div class="stat-value c-yellow" id="statConverted">0</div></div>
+    <div class="stat-card"><div class="stat-label">Not Qualified</div><div class="stat-value c-red" id="statNotQualified">0</div></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- LEFT: ADD LEAD -->
+    <div class="left-panel">
+      <div class="panel-title">➕ Naya Lead Add Karo</div>
+      <div class="form-group"><label>Naam</label><input type="text" id="fName" placeholder="Rahul Sharma"></div>
+      <div class="form-group"><label>Phone Number</label><input type="text" id="fPhone" placeholder="+919876543210"></div>
+      <div class="form-group"><label>City</label><input type="text" id="fCity" placeholder="Delhi"></div>
+      <div class="form-group"><label>Ad Source</label><input type="text" id="fSource" placeholder="WhatsApp Ad"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="fDate"></div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="new">🔵 New Lead</option>
+          <option value="qualified">✅ Qualified</option>
+          <option value="converted">🎓 Converted</option>
+          <option value="notqualified">❌ Not Qualified</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addLead()" id="addBtn">Add Lead</button>
+
+      <div class="divider"></div>
+      <div class="panel-title">📥 CSV Import (Purana Data)</div>
+      <div class="import-zone" onclick="document.getElementById('csvFileInput').click()">
+        <strong>CSV File Upload Karo</strong>
+        <p>Columns: name, phone, city, status, date</p>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)">
+      <button class="btn btn-outline btn-sm btn-full" onclick="downloadTemplate()">↓ Template Download Karo</button>
+
+      <div class="divider"></div>
+      <div class="panel-title">📡 Meta CAPI Log</div>
+      <div class="capi-log" id="capiLog">Waiting...<br></div>
+      <button class="btn btn-outline btn-sm btn-full" onclick="testCAPI()">🧪 CAPI Test Karo</button>
+    </div>
+
+    <!-- RIGHT: TABLE -->
+    <div class="right-panel">
+      <div class="table-header">
+        <div class="table-title">Saari Leads <span style="color:var(--muted);font-size:13px;" id="leadCount"></span></div>
+        <div class="search-filter">
+          <input class="search-input" placeholder="Search naam / phone..." oninput="renderTable()" id="searchInput">
+          <select class="filter-select" onchange="renderTable()" id="filterStatus">
+            <option value="">Sab</option>
+            <option value="new">New</option>
+            <option value="qualified">Qualified</option>
+            <option value="converted">Converted</option>
+            <option value="notqualified">Not Qualified</option>
+          </select>
+        </div>
+      </div>
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Naam</th><th>Phone</th><th>City</th>
+            <th>Date</th><th>Status</th><th>CAPI</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <h3>Koi lead nahi</h3>
+        <p>Upar se add karo ya CSV import karo</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>⚙ Settings & Setup</h2>
+
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button class="btn btn-outline btn-sm" onclick="showTab('tabMeta')" id="tabBtnMeta" style="border-color:var(--accent);color:var(--accent);">Meta CAPI</button>
+      <button class="btn btn-outline btn-sm" onclick="showTab('tabSheets')" id="tabBtnSheets">Google Sheets</button>
+      <button class="btn btn-outline btn-sm" onclick="showTab('tabUsers')" id="tabBtnUsers">Users</button>
+    </div>
+
+    <!-- META CAPI TAB -->
+    <div id="tabMeta">
+      <label class="modal-label">Meta Pixel ID</label>
+      <input type="text" class="modal-input" id="sPixelId" placeholder="123456789012345">
+      <label class="modal-label">Access Token</label>
+      <input type="password" class="modal-input" id="sAccessToken" placeholder="EAABxxxx...">
+      <div class="modal-hint">
+        📍 Access Token kahan milega:<br>
+        1. <strong>business.facebook.com</strong> → Events Manager<br>
+        2. Apna Pixel select karo → Settings<br>
+        3. <strong>"Generate Access Token"</strong> button dabao
+      </div>
+    </div>
+
+    <!-- GOOGLE SHEETS TAB -->
+    <div id="tabSheets" style="display:none;">
+      <div class="modal-hint">
+        📋 <strong>Google Sheets Setup (Free, 10 min):</strong><br>
+        1. <strong>sheet-setup.html</strong> file kholo (saath mein di hai)<br>
+        2. Wahan se Apps Script code copy karo<br>
+        3. Google Sheet mein paste karo → Deploy karo<br>
+        4. Web App URL copy karo aur neeche daalo
+      </div>
+      <label class="modal-label">Google Apps Script Web App URL</label>
+      <input type="text" class="modal-input" id="sSheetsUrl" placeholder="https://script.google.com/macros/s/xxx/exec">
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tabUsers" style="display:none;">
+      <div class="modal-hint">
+        👥 Team members ke liye login credentials yahan set karo.<br>
+        Format: <strong>username:password</strong> — ek line mein ek user
+      </div>
+      <label class="modal-label">Users (username:password, ek line ek user)</label>
+      <textarea class="modal-input" id="sUsers" rows="5" placeholder="admin:academy123&#10;rahul:pass123&#10;priya:pass456" style="resize:vertical;font-family:monospace;"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto;padding:10px 24px;" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// USERS & AUTH
+// ============================================================
+const DEFAULT_USERS = { admin: 'academy123' };
+let currentUser = null;
+
+function getUsers() {
+  const stored = localStorage.getItem('crmUsers');
+  if (stored) {
+    try {
+      const lines = stored.split('\n').filter(l => l.trim());
+      const users = {};
+      lines.forEach(l => {
+        const [u, p] = l.split(':');
+        if (u && p) users[u.trim()] = p.trim();
+      });
+      return Object.keys(users).length ? users : DEFAULT_USERS;
+    } catch { return DEFAULT_USERS; }
+  }
+  return DEFAULT_USERS;
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const users = getUsers();
+  if (users[u] && users[u] === p) {
+    currentUser = u;
+    sessionStorage.setItem('crmUser', u);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('currentUserLabel').textContent = u;
+    initApp();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    setTimeout(() => document.getElementById('loginError').style.display = 'none', 3000);
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('crmUser');
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// Auto-login if session exists
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('crmUser');
+  if (saved) {
+    currentUser = saved;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('currentUserLabel').textContent = saved;
+    initApp();
+  }
+});
+
+// ============================================================
+// APP INIT
+// ============================================================
+let leads = [];
+let settings = {};
+
+function initApp() {
+  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  settings = JSON.parse(localStorage.getItem('crmSettings') || '{}');
+  loadLeads();
+}
+
+// ============================================================
+// LEADS — GOOGLE SHEETS + LOCALSTORAGE
+// ============================================================
+async function loadLeads() {
+  const sheetsUrl = settings.sheetsUrl;
+  if (sheetsUrl) {
+    try {
+      const res = await fetch(`${sheetsUrl}?action=get`);
+      const data = await res.json();
+      if (data.leads) {
+        leads = data.leads;
+        localStorage.setItem('crmLeads', JSON.stringify(leads));
+        setSyncStatus(true);
+      }
+    } catch {
+      leads = JSON.parse(localStorage.getItem('crmLeads') || '[]');
+      setSyncStatus(false);
+    }
+  } else {
+    leads = JSON.parse(localStorage.getItem('crmLeads') || '[]');
+    document.getElementById('setupNotice').style.display = 'flex';
+    setSyncStatus(false);
+  }
+  renderTable();
+  updateStats();
+}
+
+async function saveLeadToSheets(lead) {
+  const sheetsUrl = settings.sheetsUrl;
+  if (!sheetsUrl) {
+    localStorage.setItem('crmLeads', JSON.stringify(leads));
+    return;
+  }
+  try {
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', lead }),
+    });
+    setSyncStatus(true);
+  } catch {
+    localStorage.setItem('crmLeads', JSON.stringify(leads));
+    setSyncStatus(false);
+  }
+}
+
+async function updateLeadInSheets(lead) {
+  const sheetsUrl = settings.sheetsUrl;
+  localStorage.setItem('crmLeads', JSON.stringify(leads));
+  if (!sheetsUrl) return;
+  try {
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update', lead }),
+    });
+    setSyncStatus(true);
+  } catch { setSyncStatus(false); }
+}
+
+async function deleteLeadFromSheets(id) {
+  const sheetsUrl = settings.sheetsUrl;
+  localStorage.setItem('crmLeads', JSON.stringify(leads));
+  if (!sheetsUrl) return;
+  try {
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+  } catch {}
+}
+
+function setSyncStatus(ok) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (ok) { dot.style.background = 'var(--green)'; txt.textContent = 'Synced'; }
+  else { dot.style.background = 'var(--muted)'; txt.textContent = 'Local only'; }
+}
+
+// ============================================================
+// ADD LEAD
+// ============================================================
+async function addLead() {
+  const name = document.getElementById('fName').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  const city = document.getElementById('fCity').value.trim();
+  const source = document.getElementById('fSource').value.trim();
+  const date = document.getElementById('fDate').value;
+  const status = document.getElementById('fStatus').value;
+
+  if (!name && !phone) { showToast('Naam ya phone daalo', 'error'); return; }
+
+  const btn = document.getElementById('addBtn');
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+  btn.disabled = true;
+
+  const lead = {
+    id: Date.now().toString(),
+    name, phone, city, source,
+    date: date || new Date().toISOString().split('T')[0],
+    status,
+    capiStatus: 'pending',
+    addedBy: currentUser,
+    createdAt: new Date().toISOString()
+  };
+
+  leads.unshift(lead);
+  await saveLeadToSheets(lead);
+  renderTable();
+  updateStats();
+  clearForm();
+
+  btn.innerHTML = 'Add Lead';
+  btn.disabled = false;
+  showToast(`Lead added: ${name || phone} ✅`, 'success');
+
+  if (status === 'qualified' || status === 'converted') fireCapiEvent(lead);
+}
+
+// ============================================================
+// STATUS CHANGE
+// ============================================================
+async function changeStatus(id, newStatus) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const old = lead.status;
+  lead.status = newStatus;
+  await updateLeadInSheets(lead);
+  renderTable();
+  updateStats();
+  if ((newStatus === 'qualified' || newStatus === 'converted') && old !== newStatus) {
+    showToast('Status updated! CAPI signal bheja ja raha hai...', 'info');
+    fireCapiEvent(lead);
+  }
+}
+
+// ============================================================
+// DELETE
+// ============================================================
+async function deleteLead(id) {
+  if (!confirm('Lead delete karein?')) return;
+  leads = leads.filter(l => l.id !== id);
+  await deleteLeadFromSheets(id);
+  renderTable();
+  updateStats();
+  showToast('Lead deleted', 'error');
+}
+
+// ============================================================
+// META CAPI
+// ============================================================
+async function fireCapiEvent(lead) {
+  const { pixelId, accessToken } = settings;
+  if (!pixelId || !accessToken) {
+    logCAPI('⚠️ Pixel ID & Access Token set karo Settings mein!');
+    lead.capiStatus = 'error';
+    localStorage.setItem('crmLeads', JSON.stringify(leads));
+    renderTable();
+    return;
+  }
+  const eventName = lead.status === 'converted' ? 'Purchase' : 'Lead';
+  logCAPI(`📡 Sending ${eventName} → ${lead.name || lead.phone}`);
+  const hashedPhone = await hashSHA256(lead.phone?.replace(/\D/g,'') || '');
+  const payload = {
+    data: [{
+      event_name: eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'other',
+      user_data: {
+        ph: [hashedPhone],
+        ct: lead.city ? [await hashSHA256(lead.city.toLowerCase().trim())] : undefined,
+        country: ['in']
+      },
+      custom_data: {
+        lead_quality: lead.status,
+        source: lead.source || 'whatsapp',
+        ...(eventName === 'Purchase' ? { currency: 'INR', value: 1 } : {})
+      }
+    }]
+  };
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.events_received > 0 || res.ok) {
+      lead.capiStatus = 'sent';
+      logCAPI(`✅ Event sent! Received: ${data.events_received || 1}`);
+      showToast(`Meta CAPI: ${eventName} event sent! ✅`, 'success');
+    } else {
+      lead.capiStatus = 'error';
+      logCAPI(`❌ ${JSON.stringify(data.error?.message || data)}`);
+    }
+  } catch (e) {
+    lead.capiStatus = 'error';
+    logCAPI(`❌ ${e.message}`);
+  }
+  localStorage.setItem('crmLeads', JSON.stringify(leads));
+  renderTable();
+}
+
+async function testCAPI() {
+  if (!settings.pixelId || !settings.accessToken) { openSettings(); showToast('Pehle settings set karo', 'error'); return; }
+  await fireCapiEvent({ id: 'test', name: 'Test Lead', phone: '9999999999', city: 'Delhi', status: 'qualified', capiStatus: 'pending', createdAt: new Date().toISOString() });
+}
+
+async function hashSHA256(str) {
+  if (!str) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+// CSV
+// ============================================================
+function importCSV(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const rows = ev.target.result.split('\n').filter(r => r.trim());
+    if (rows.length < 2) { showToast('CSV mein data nahi', 'error'); return; }
+    const headers = rows[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g,''));
+    const statusMap = { qualified:'qualified',achi:'qualified',good:'qualified',yes:'qualified',converted:'converted',admission:'converted','not qualified':'notqualified',bekar:'notqualified',no:'notqualified',notqualified:'notqualified',new:'new',''  :'new' };
+    let count = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const cols = rows[i].split(',').map(c => c.trim().replace(/"/g,''));
+      const get = key => { const idx = headers.indexOf(key); return idx >= 0 ? cols[idx] || '' : ''; };
+      const lead = {
+        id: Date.now().toString() + i,
+        name: get('name') || get('naam'),
+        phone: get('phone') || get('number') || get('mobile'),
+        city: get('city'),
+        source: get('source') || 'imported',
+        date: get('date') || new Date().toISOString().split('T')[0],
+        status: statusMap[get('status').toLowerCase()] || 'new',
+        capiStatus: 'pending',
+        addedBy: currentUser,
+        createdAt: new Date().toISOString()
+      };
+      leads.push(lead);
+      count++;
+    }
+    localStorage.setItem('crmLeads', JSON.stringify(leads));
+    if (settings.sheetsUrl) {
+      try { await fetch(settings.sheetsUrl, { method: 'POST', body: JSON.stringify({ action: 'bulkAdd', leads: leads.slice(-count) }) }); } catch {}
+    }
+    renderTable(); updateStats();
+    showToast(`${count} leads import ho gaye! ✅`, 'success');
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function downloadTemplate() {
+  const csv = `name,phone,city,status,date\nRahul Sharma,9876543210,Delhi,qualified,2024-01-15\nPriya Verma,9123456789,Mumbai,converted,2024-01-16`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'leads_template.csv'; a.click();
+}
+
+function exportCSV() {
+  const rows = [['Naam','Phone','City','Source','Date','Status','CAPI','Added By']];
+  leads.forEach(l => rows.push([l.name,l.phone,l.city,l.source,l.date,l.status,l.capiStatus,l.addedBy]));
+  const csv = rows.map(r => r.map(c=>`"${c||''}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+}
+
+// ============================================================
+// RENDER TABLE
+// ============================================================
+function renderTable() {
+  const search = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  const filter = document.getElementById('filterStatus')?.value||'';
+  const filtered = leads.filter(l =>
+    (!search || (l.name||'').toLowerCase().includes(search) || (l.phone||'').includes(search)) &&
+    (!filter || l.status === filter)
+  );
+  document.getElementById('leadCount').textContent = `(${filtered.length})`;
+  const tbody = document.getElementById('leadsTableBody');
+  const empty = document.getElementById('emptyState');
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const capiLabel = { sent:'<span class="capi-sent">✓ Sent</span>', pending:'<span class="capi-pending">—</span>', error:'<span class="capi-error">✗ Err</span>' };
+  tbody.innerHTML = filtered.map((l,i) => `<tr>
+    <td style="color:var(--muted);font-size:12px">${filtered.length-i}</td>
+    <td><strong>${l.name||'—'}</strong><br><span style="font-size:11px;color:var(--muted)">${l.addedBy||''}</span></td>
+    <td style="color:var(--muted)">${l.phone||'—'}</td>
+    <td>${l.city||'—'}</td>
+    <td style="color:var(--muted);font-size:12px">${l.date||'—'}</td>
+    <td>
+      <select class="status-select" onchange="changeStatus('${l.id}',this.value)">
+        <option value="new" ${l.status==='new'?'selected':''}>🔵 New</option>
+        <option value="qualified" ${l.status==='qualified'?'selected':''}>✅ Qualified</option>
+        <option value="converted" ${l.status==='converted'?'selected':''}>🎓 Converted</option>
+        <option value="notqualified" ${l.status==='notqualified'?'selected':''}>❌ Not Qualified</option>
+      </select>
+    </td>
+    <td>${capiLabel[l.capiStatus]||capiLabel.pending}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteLead('${l.id}')">✕</button></td>
+  </tr>`).join('');
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = leads.length;
+  document.getElementById('statQualified').textContent = leads.filter(l=>l.status==='qualified').length;
+  document.getElementById('statConverted').textContent = leads.filter(l=>l.status==='converted').length;
+  document.getElementById('statNotQualified').textContent = leads.filter(l=>l.status==='notqualified').length;
+}
+
+// ============================================================
+// SETTINGS MODAL
+// ============================================================
+function openSettings() {
+  document.getElementById('sPixelId').value = settings.pixelId||'';
+  document.getElementById('sAccessToken').value = settings.accessToken||'';
+  document.getElementById('sSheetsUrl').value = settings.sheetsUrl||'';
+  const users = localStorage.getItem('crmUsers')||'admin:academy123';
+  document.getElementById('sUsers').value = users;
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+function saveSettings() {
+  settings.pixelId = document.getElementById('sPixelId').value.trim();
+  settings.accessToken = document.getElementById('sAccessToken').value.trim();
+  settings.sheetsUrl = document.getElementById('sSheetsUrl').value.trim();
+  const usersRaw = document.getElementById('sUsers').value.trim();
+  localStorage.setItem('crmSettings', JSON.stringify(settings));
+  localStorage.setItem('crmUsers', usersRaw);
+  closeSettings();
+  showToast('Settings save ho gayi! ✅', 'success');
+  if (settings.sheetsUrl) { document.getElementById('setupNotice').style.display = 'none'; loadLeads(); }
+}
+function showTab(tab) {
+  ['tabMeta','tabSheets','tabUsers'].forEach(t => {
+    document.getElementById(t).style.display = t===tab?'block':'none';
+    const btn = document.getElementById('tabBtn'+t.replace('tab',''));
+    if (btn) { btn.style.borderColor = t===tab?'var(--accent)':'var(--border)'; btn.style.color = t===tab?'var(--accent)':'var(--text)'; }
+  });
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function clearForm() {
+  ['fName','fPhone','fCity','fSource'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('fStatus').value = 'new';
+  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+}
+function logCAPI(msg) {
+  const log = document.getElementById('capiLog');
+  const t = new Date().toLocaleTimeString('en-IN');
+  log.innerHTML += `<span style="color:var(--muted)">[${t}]</span> ${msg}<br>`;
+  log.scrollTop = log.scrollHeight;
+}
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
